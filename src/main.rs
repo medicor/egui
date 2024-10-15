@@ -41,7 +41,7 @@ impl Compounder {
 impl App for Compounder {
     fn update(&mut self, context: &egui::Context, _frame: &mut Frame) {
         CentralPanel::default().show (context, |ui| {
-            ui.label(format!("Number of days = {}", (self.final_date-self.start_date).num_days()));
+            ui.label(format!("Number of days difference = {}", (self.final_date-self.start_date).num_days()));
         });
     }
 }
