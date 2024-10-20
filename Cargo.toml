@@ -1,22 +1,26 @@
 [package]
+description = "Calculate CAGR and date difference"
 name = "compounder"
 version = "0.1.0"
 edition = "2021"
-
-[dependencies]
-eframe = { version = "0.29.1", default-features = false, features = ["glow", "default_fonts", "serde", "persistence"] }
-chrono = { version = "0.4.38", features = ["serde"] }
-serde = "1.0.210"
-# num-traits = "0.2"
 
 # [[bin]]
 # name = "compounder"
 # path = "src/main.rs"
 
-# [profile.dev]
-# opt-level = 1
+[dependencies]
+eframe = { version = "0.29.1", default-features = false, features = ["glow", "serde", "persistence"] }
+chrono = { version = "0.4.38", features = ["serde"] }
+serde  = { version = "1.0.210" }
 
-[profile.release]
-opt-level = 3
-strip = "symbols"
-lto = "fat"
+[build-dependencies]
+winresource = "0.1.17"
+
+[profile.dev.package."*"]
+debug = false
+
+# [profile.release]
+# opt-level = 3
+# strip = "symbols"
+# lto = "fat"
+
