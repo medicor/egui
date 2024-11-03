@@ -5,10 +5,10 @@
             "name": "Launch",
             "type":"cppvsdbg",
             "request": "launch",
-            "program": "target/debug/compounder.exe",
+            "program": "target/debug/Compounder.exe",
             "args": [],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Build"
-        }
+        },
     ]
 }

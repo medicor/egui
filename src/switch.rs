@@ -11,7 +11,7 @@ pub fn switch(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
     // 1. Deciding widget size:
     // You can query the `ui` how much space is available,
     // but in this example we have a fixed size widget based on the height of a standard button:
-    let desired_size = ui.spacing().interact_size.y * egui::vec2(2.0, 1.0);
+    let desired_size = ui.spacing().interact_size.y * egui::vec2(2.5, 1.0);
 
     // 2. Allocating space:
     // This is where we get a region of the screen assigned.
@@ -43,13 +43,11 @@ pub fn switch(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
         // All coordinates are in absolute screen coordinates so we use `rect` to place the elements.
         let rect = rect.expand(visuals.expansion);
         let radius = 0.5 * rect.height();
-        ui.painter()
-            .rect(rect, radius, visuals.bg_fill, visuals.bg_stroke);
+        ui.painter().rect(rect, radius, visuals.bg_fill, visuals.bg_stroke);
         // Paint the circle, animating it from left to right with `how_on`:
-        let circle_x = egui::lerp((rect.left() + radius)..=(rect.right() - radius), how_on);
+        let circle_x = egui::lerp((rect.left() + radius - 2.0)..=(rect.right() - radius), how_on);
         let center = egui::pos2(circle_x, rect.center().y);
-        ui.painter()
-            .circle(center, 0.75 * radius, visuals.bg_fill, visuals.fg_stroke);
+        ui.painter().circle(center, 0.8 * radius, visuals.bg_fill, visuals.fg_stroke);
     }
 
     // All done! Return the interaction response so the user can check what happened
