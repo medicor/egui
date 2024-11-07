@@ -24,9 +24,10 @@ struct Compounder
 
 impl Default for Compounder {
     fn default() -> Self {
+        let today = chrono::Local::now().date_naive();
         Self {
-            start_date: NaiveDate::from_ymd_opt(2024,  8, 31).unwrap(), //chrono::Local::now().date_naive().to_string();
-            final_date: NaiveDate::from_ymd_opt(2024, 10, 14).unwrap(),
+            start_date: today, //NaiveDate::from_ymd_opt(2024,  8, 31).unwrap(),
+            final_date: today,
             mode: false,
         }
     }
@@ -59,31 +60,78 @@ impl App for Compounder {
             let mut wc: u8 = 0;
             let mut dc: u8 = 0;
             let mut ss: String = self.start_date.to_string();
+            let mut iv: String = String::from("0");
             
             // egui::Image::new (egui::include_image!("../assets/Panel-Background.svg")).paint_at(ui, ui.ctx().screen_rect());
             // ui.style_mut().spacing.slider_width = 640.0;
-            ui.style_mut().spacing.item_spacing = egui::Vec2::new(24.0, 12.0);
+            ui.style_mut().spacing.item_spacing = egui::Vec2::new(16.0, 8.0);
             // egui::Window::new("🔧 Settings")
             //     .open(&mut self.mode)
             //     .show(context, |ui| {
             //         context.settings_ui(ui);
             //     });
+            ui.style_mut().spacing.text_edit_width = 75.0;
             ui.horizontal(|ui| {
-                ui.style_mut().spacing.text_edit_width = 75.0;
-                if ui.text_edit_singleline(&mut ss).changed() {
-                    self.start_date = NaiveDate::from_str(&ss).unwrap();
-                    println!("{ss}")
-                };
-                if ui.text_edit_singleline(&mut ss).changed() {
-                    self.final_date = NaiveDate::from_str(&ss).unwrap();
-                    println!("{ss}")
-                };
+                ui.vertical(|ui| {
+                    ui.label("Start date:");
+                    if ui.text_edit_singleline(&mut ss).highlight().changed() {
+                        self.start_date = NaiveDate::from_str(&ss).unwrap();
+                        println!("{ss}")
+                    };
+                    ui.add_space(12.0);
+                    ui.label("Final date:");
+                    if ui.text_edit_singleline(&mut ss).highlight().changed() {
+                        self.final_date = NaiveDate::from_str(&ss).unwrap();
+                        println!("{ss}")
+                    };
+                });
+                ui.add_space(36.0);
+                ui.vertical(|ui| {
+                    ui.add_space(12.0);
+                    ui.add(egui::Slider::new(&mut yc, 0..=25).text("years"));
+                    ui.add(egui::Slider::new(&mut mc, 0..=11).text("months"));
+                    ui.add(egui::Slider::new(&mut wc, 0..=51).text("weeks"));
+                    ui.add(egui::Slider::new(&mut dc, 0..=30).text("days"));
+                });
             });
-            ui.add(toggle(&mut self.mode));
-            ui.add(egui::Slider::new(&mut yc, 0..=25).text("years"));
-            ui.add(egui::Slider::new(&mut mc, 0..=11).text("months"));
-            ui.add(egui::Slider::new(&mut wc, 0..=51).text("weeks"));
-            ui.add(egui::Slider::new(&mut dc, 0..=30).text("days"));
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    ui.label("Start amount:");
+                    if ui.text_edit_singleline(&mut iv).highlight().changed() {
+                        println!("{iv}")
+                    };
+                });
+                ui.vertical(|ui| {
+                    ui.label("Final amount:");
+                    if ui.text_edit_singleline(&mut iv).highlight().changed() {
+                        println!("{iv}")
+                    };
+                });
+                ui.vertical(|ui| {
+                    ui.label("CAGR:");
+                    if ui.text_edit_singleline(&mut iv).highlight().changed() {
+                        println!("{iv}")
+                    };
+                });
+            });
+            ui.add_space(72.0);
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    ui.label("Dark mode:");
+                    ui.add(toggle(&mut self.mode));
+                });
+                ui.add_space(36.0);
+                ui.vertical(|ui| {
+                    ui.label("Scale:");
+                    ui.horizontal(|ui| {
+                        ui.selectable_label(true,  "small" ).highlight();
+                        ui.selectable_label(false, "medium").highlight();
+                        ui.selectable_label(false, "large" ).highlight();
+                    });
+                });
+            });
         });
     }
 }
