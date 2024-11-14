@@ -98,13 +98,14 @@ impl App for Compounder
             ui.style_mut().spacing.text_edit_width = 75.0;
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    ui.label("Start date:");
+                    // ui.weak("Start date");
+                    ui.label(egui::RichText::new("Start date").small().weak());
                     if ui.text_edit_singleline(&mut ss).highlight().changed() {
                         self.start_date = NaiveDate::from_str(&ss).unwrap();
                         println!("{ss}")
                     };
                     ui.add_space(12.0);
-                    ui.label("Final date:");
+                    ui.label(egui::RichText::new("Final date").small().weak());
                     if ui.text_edit_singleline(&mut ss).highlight().changed() {
                         self.final_date = NaiveDate::from_str(&ss).unwrap();
                         println!("{ss}")
@@ -124,22 +125,21 @@ impl App for Compounder
             ui.add_space(12.0);
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    ui.label("Start amount:");
+                    ui.label(egui::RichText::new("Start amount").small().weak());
                     if ui.text_edit_singleline(&mut iv).highlight().changed() {
                         println!("{iv}")
                     };
                     ui.add_space(12.0);
                     ui.horizontal(|ui| {
                         ui.vertical(|ui| {
-                            ui.label("Final amount:");
+                            ui.label(egui::RichText::new("Final amount").small().weak());
                             if ui.text_edit_singleline(&mut iv).highlight().changed() {
                                 println!("{iv}")
                             };
                         });
-                        // ui.add_space(12.0);
-                        ui.label("\n  =  ");
+                        ui.label(egui::RichText::new("\n  =  ").strong());
                         ui.vertical(|ui| {
-                            ui.label("CAGR:");
+                            ui.label(egui::RichText::new("CAGR").small().weak());
                             if ui.text_edit_singleline(&mut iv).highlight().changed() {
                                 println!("{iv}")
                             };
@@ -152,14 +152,14 @@ impl App for Compounder
             ui.add_space(12.0);
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    ui.label("Light mode:");
+                    ui.label(egui::RichText::new("Light mode?").small().weak());
                     if ui.add(toggle(&mut self.ui_mode)).changed() {
 
                     };
                 });
                 ui.add_space(12.0);
                 ui.vertical(|ui| {
-                    ui.label("Text size:");
+                    ui.label(egui::RichText::new("Text size").small().weak());
                     ui.horizontal(|ui| {
                         if ui.selectable_label(self.ui_size == InterfaceSize::Small,  "small" ).highlight().clicked() {
                             self.resize(ui.ctx(), InterfaceSize::Small);
