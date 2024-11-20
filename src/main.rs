@@ -21,8 +21,11 @@ enum InterfaceSize
     Large
 }
 
-impl InterfaceSize 
+#[derive(serde::Deserialize, serde::Serialize, PartialEq, Copy, Clone)]
+enum InterfaceMode
 {
+    Dark,
+    Light
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -31,21 +34,17 @@ struct Compounder
     start_date: NaiveDate,
     final_date: NaiveDate,
     ui_size: InterfaceSize,
-    ui_mode: bool
+    ui_mode: InterfaceMode
 }
 
 impl Compounder 
 {
-    fn new (cc: &eframe::CreationContext<'_>) -> Self {
-        let mut fd = egui::FontDefinitions::default();
-        fd.font_data.insert("Inter Medium".to_owned(), egui::FontData::from_static(include_bytes!("../assets/Inter-Medium.ttf")));
-        fd.families.get_mut(&egui::FontFamily::Proportional).unwrap().insert(0, "Inter Medium".to_owned());
-        cc.egui_ctx.set_fonts(fd);
+    fn new (context: &eframe::CreationContext<'_>) -> Self {
+        let cc: Compounder = if let Some(ps) = context.storage { eframe::get_value(ps, eframe::APP_KEY).unwrap_or_default() } else { Default::default() };
         // egui_extras::install_image_loaders(&cc.egui_ctx);
-        if let Some(ps) = cc.storage {
-            return eframe::get_value(ps, eframe::APP_KEY).unwrap_or_default();
-        }
-        Default::default()
+        set_fonts(&context.egui_ctx);
+        set_style(&context.egui_ctx, cc.ui_mode);
+        cc
     }
 
     fn resize (&mut self, context: &egui::Context, size: InterfaceSize) {
@@ -63,17 +62,37 @@ impl Compounder
         context.send_viewport_cmd(egui::ViewportCommand::InnerSize(egui::Vec2::new(ws, ws)));
     }
 
+    fn remode (&mut self, context: &egui::Context, mode: InterfaceMode) {
+        if  self.ui_mode == mode {
+            return;
+        }
+        self.ui_mode = mode;
+        set_style(context, mode);
+    }
+
+    fn get_frame (&mut self) -> egui::Frame {
+        let cb = match self.ui_mode {
+            InterfaceMode::Dark  => egui::Color32::from_rgb( 15,  10,  12),
+            InterfaceMode::Light => egui::Color32::from_rgb(255, 240, 245)
+        };
+        egui::Frame {
+            inner_margin: egui::Margin::same(24.0),
+            fill: cb,
+            ..Default::default()
+        }
+    }
+
 }
 
 impl Default for Compounder 
 {
     fn default() -> Self {
-        let today = chrono::Local::now().date_naive();
+        let dt = chrono::Local::now().date_naive();
         Self {
-            start_date: today, //NaiveDate::from_ymd_opt(2024,  8, 31).unwrap(),
-            final_date: today,
+            start_date: dt, //NaiveDate::from_ymd_opt(2024,  8, 31).unwrap(),
+            final_date: dt,
             ui_size: InterfaceSize::Small,
-            ui_mode: false
+            ui_mode: InterfaceMode::Dark
         }
     }
 }
@@ -85,20 +104,14 @@ impl App for Compounder
     }
 
     fn update (&mut self, context: &egui::Context, _frame: &mut Frame) {
-        egui::CentralPanel::default().frame(egui::Frame::default().inner_margin(24.0)).show (context, |ui| {
-            let mut yc: u8 = 0;
-            let mut mc: u8 = 0;
-            let mut wc: u8 = 0;
-            let mut dc: u8 = 0;
-            let mut ss: String = self.start_date.to_string();
-            let mut iv: String = String::from("0");
-            
+        egui::CentralPanel::default().frame(self.get_frame()).show(context, |ui| {
             // egui::Image::new (egui::include_image!("../assets/Panel-Background.svg")).paint_at(ui, ui.ctx().screen_rect());
+            // egui::widgets::global_theme_preference_buttons(ui);
             ui.style_mut().spacing.item_spacing = egui::Vec2::new(16.0, 8.0);
             ui.style_mut().spacing.text_edit_width = 75.0;
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    // ui.weak("Start date");
+                    let mut ss: String = self.start_date.to_string();
                     ui.label(egui::RichText::new("Start date").small().weak());
                     if ui.text_edit_singleline(&mut ss).highlight().changed() {
                         self.start_date = NaiveDate::from_str(&ss).unwrap();
@@ -113,6 +126,10 @@ impl App for Compounder
                 });
                 ui.add_space(36.0);
                 ui.vertical(|ui| {
+                    let mut yc: u8 = 0;
+                    let mut mc: u8 = 0;
+                    let mut wc: u8 = 0;
+                    let mut dc: u8 = 0;
                     ui.add_space(12.0);
                     ui.add(egui::Slider::new(&mut yc, 0..=25).text("years"));
                     ui.add(egui::Slider::new(&mut mc, 0..=11).text("months"));
@@ -125,6 +142,7 @@ impl App for Compounder
             ui.add_space(12.0);
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
+                    let mut iv: String = String::from("0");
                     ui.label(egui::RichText::new("Start amount").small().weak());
                     if ui.text_edit_singleline(&mut iv).highlight().changed() {
                         println!("{iv}")
@@ -152,9 +170,13 @@ impl App for Compounder
             ui.add_space(12.0);
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    ui.label(egui::RichText::new("Light mode?").small().weak());
-                    if ui.add(toggle(&mut self.ui_mode)).changed() {
-
+                    ui.label(egui::RichText::new("Dark mode").small().weak());
+                    let mut im: bool = InterfaceMode::Dark == self.ui_mode;
+                    if ui.add(toggle(&mut im)).clicked() {
+                        match self.ui_mode {
+                            InterfaceMode::Dark  => self.remode(ui.ctx(), InterfaceMode::Light),
+                            InterfaceMode::Light => self.remode(ui.ctx(), InterfaceMode::Dark)
+                        }
                     };
                 });
                 ui.add_space(12.0);
@@ -177,7 +199,35 @@ impl App for Compounder
     }
 }
 
+fn set_fonts (context: &egui::Context) {
+    let mut fd = egui::FontDefinitions::default();
+    fd.font_data.insert("Inter Medium".to_owned(), egui::FontData::from_static(include_bytes!("../assets/Inter-Medium.ttf")));
+    fd.families.get_mut(&egui::FontFamily::Proportional).unwrap().insert(0, "Inter Medium".to_owned());
+    context.set_fonts(fd);
+}
+
+fn set_style (context: &egui::Context, mode: InterfaceMode) {
+    let mut vs: egui::Visuals;
+    match mode {
+        InterfaceMode::Dark  => {
+            context.set_theme(egui::Theme::Dark);
+            vs = egui::Visuals::dark();
+            vs.widgets.inactive.bg_fill = egui::Color32::RED;
+        },
+        InterfaceMode::Light => {
+            context.set_theme(egui::Theme::Light);
+            vs = egui::Visuals::light();
+            vs.widgets.inactive.bg_fill = egui::Color32::BLUE;
+        }
+    }
+    // ui.visuals_mut().widgets.inactive.bg_fill = egui::Color32::RED;
+    // let mut visuals = context.options(|opt| opt.theme_preference);
+    context.set_visuals(vs);
+
+}
+
 fn main() -> eframe::Result {
+    // let factorial = | n | (1..=n).product::<i32>(); // Nice!
     eframe::run_native (
         "Compounder", 
         eframe::NativeOptions {
@@ -188,6 +238,9 @@ fn main() -> eframe::Result {
                 .with_icon(eframe::icon_data::from_png_bytes(&include_bytes!("../assets/Compounder.png")[..]).unwrap_or_default()),
             ..Default::default()
         },
-        Box::new(|cc| Ok(Box::new(Compounder::new(cc))))
+        Box::new(|context| {
+            // set_visuals(&context);
+            Ok(Box::new(Compounder::new(context)))
+        })
     )
 }
