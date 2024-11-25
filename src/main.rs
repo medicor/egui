@@ -1,6 +1,7 @@
 
 #![windows_subsystem = "windows"]
-#![allow(non_snake_case)]
+
+const GUI_SIZE: egui::Vec2 = egui::Vec2::new(400.0, 400.0);
 
 use std::str::FromStr;
 use chrono::NaiveDate;
@@ -52,14 +53,14 @@ impl Compounder
             return;
         }
         self.ui_size = size;
-        let (zf, ws) = match size {
-            InterfaceSize::Small  => (1.0, 390.0),
-            InterfaceSize::Medium => (1.2, 395.0),
-            InterfaceSize::Large  => (1.5, 400.0)
+        let zf = match size {
+            InterfaceSize::Small  => 1.0,
+            InterfaceSize::Medium => 1.2,
+            InterfaceSize::Large  => 1.5
         };
         // context.set_zoom_factor(zf); // Strange things happen when zoom is set through method.
         context.options_mut(|writer| writer.zoom_factor = zf);
-        context.send_viewport_cmd(egui::ViewportCommand::InnerSize(egui::Vec2::new(ws, ws)));
+        context.send_viewport_cmd(egui::ViewportCommand::InnerSize(GUI_SIZE)); // Hack to make gui resize.
     }
 
     fn remode (&mut self, context: &egui::Context, mode: InterfaceMode) {
@@ -112,13 +113,13 @@ impl App for Compounder
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     let mut ss: String = self.start_date.to_string();
-                    ui.label(egui::RichText::new("Start date").small().weak());
+                    ui.label(egui::RichText::new("START DATE").small().weak());
                     if ui.text_edit_singleline(&mut ss).highlight().changed() {
                         self.start_date = NaiveDate::from_str(&ss).unwrap();
                         println!("{ss}")
                     };
                     ui.add_space(12.0);
-                    ui.label(egui::RichText::new("Final date").small().weak());
+                    ui.label(egui::RichText::new("FINAL DATE").small().weak());
                     if ui.text_edit_singleline(&mut ss).highlight().changed() {
                         self.final_date = NaiveDate::from_str(&ss).unwrap();
                         println!("{ss}")
@@ -143,14 +144,14 @@ impl App for Compounder
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     let mut iv: String = String::from("0");
-                    ui.label(egui::RichText::new("Start amount").small().weak());
+                    ui.label(egui::RichText::new("START AMOUNT").small().weak());
                     if ui.text_edit_singleline(&mut iv).highlight().changed() {
                         println!("{iv}")
                     };
                     ui.add_space(12.0);
                     ui.horizontal(|ui| {
                         ui.vertical(|ui| {
-                            ui.label(egui::RichText::new("Final amount").small().weak());
+                            ui.label(egui::RichText::new("FINAL AMOUNT").small().weak());
                             if ui.text_edit_singleline(&mut iv).highlight().changed() {
                                 println!("{iv}")
                             };
@@ -170,7 +171,7 @@ impl App for Compounder
             ui.add_space(12.0);
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    ui.label(egui::RichText::new("Dark mode").small().weak());
+                    ui.label(egui::RichText::new("DARK MODE").small().weak());
                     let mut im: bool = InterfaceMode::Dark == self.ui_mode;
                     if ui.add(toggle(&mut im)).clicked() {
                         match self.ui_mode {
@@ -181,7 +182,7 @@ impl App for Compounder
                 });
                 ui.add_space(12.0);
                 ui.vertical(|ui| {
-                    ui.label(egui::RichText::new("Text size").small().weak());
+                    ui.label(egui::RichText::new("TEXT SIZE").small().weak());
                     ui.horizontal(|ui| {
                         if ui.selectable_label(self.ui_size == InterfaceSize::Small,  "small" ).highlight().clicked() {
                             self.resize(ui.ctx(), InterfaceSize::Small);
@@ -201,8 +202,8 @@ impl App for Compounder
 
 fn set_fonts (context: &egui::Context) {
     let mut fd = egui::FontDefinitions::default();
-    fd.font_data.insert("Inter Medium".to_owned(), egui::FontData::from_static(include_bytes!("../assets/Inter-Medium.ttf")));
-    fd.families.get_mut(&egui::FontFamily::Proportional).unwrap().insert(0, "Inter Medium".to_owned());
+    fd.font_data.insert("Sans Font".to_owned(), egui::FontData::from_static(include_bytes!("../assets/Inter-Regular.ttf")));
+    fd.families.get_mut(&egui::FontFamily::Proportional).unwrap().insert(0, "Sans Font".to_owned());
     context.set_fonts(fd);
 }
 
@@ -220,8 +221,6 @@ fn set_style (context: &egui::Context, mode: InterfaceMode) {
             vs.widgets.inactive.bg_fill = egui::Color32::BLUE;
         }
     }
-    // ui.visuals_mut().widgets.inactive.bg_fill = egui::Color32::RED;
-    // let mut visuals = context.options(|opt| opt.theme_preference);
     context.set_visuals(vs);
 
 }
@@ -234,12 +233,11 @@ fn main() -> eframe::Result {
             viewport: eframe::egui::ViewportBuilder::default()
                 .with_resizable(false)
                 .with_maximize_button(false)
-                .with_inner_size([390.0, 390.0])
+                .with_inner_size(GUI_SIZE)
                 .with_icon(eframe::icon_data::from_png_bytes(&include_bytes!("../assets/Compounder.png")[..]).unwrap_or_default()),
             ..Default::default()
         },
         Box::new(|context| {
-            // set_visuals(&context);
             Ok(Box::new(Compounder::new(context)))
         })
     )
