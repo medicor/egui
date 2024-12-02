@@ -105,6 +105,7 @@ impl App for Compounder
     }
 
     fn update (&mut self, context: &egui::Context, _frame: &mut Frame) {
+        dbg!("update");
         egui::CentralPanel::default().frame(self.get_frame()).show(context, |ui| {
             // egui::Image::new (egui::include_image!("../assets/Panel-Background.svg")).paint_at(ui, ui.ctx().screen_rect());
             // egui::widgets::global_theme_preference_buttons(ui);
@@ -211,23 +212,36 @@ fn set_style (context: &egui::Context, mode: InterfaceMode) {
     let mut vs: egui::Visuals;
     match mode {
         InterfaceMode::Dark  => {
+            // RGB = 290, 100, 40
             context.set_theme(egui::Theme::Dark);
             vs = egui::Visuals::dark();
-            vs.widgets.inactive.bg_fill = egui::Color32::RED;
+            // vs.widgets.inactive.bg_fill = egui::Color32::LIGHT_RED;
+            vs.widgets.active.bg_fill = egui::Color32::RED;
+            // vs.widgets.inactive.weak_bg_fill = egui::Color32::LIGHT_RED;
+            // vs.widgets.active.weak_bg_fill = egui::Color32::RED;
+            vs.widgets.hovered.weak_bg_fill = egui::Color32::DARK_RED;
+            vs.selection.bg_fill = egui::Color32::RED;
         },
         InterfaceMode::Light => {
             context.set_theme(egui::Theme::Light);
             vs = egui::Visuals::light();
-            vs.widgets.inactive.bg_fill = egui::Color32::BLUE;
+            // vs.widgets.inactive.bg_fill = egui::Color32::LIGHT_BLUE;
+            vs.widgets.active.bg_fill = egui::Color32::BLUE;
+            // vs.widgets.inactive.weak_bg_fill = egui::Color32::LIGHT_BLUE;
+            // vs.widgets.active.weak_bg_fill = egui::Color32::BLUE;
+            vs.widgets.hovered.weak_bg_fill = egui::Color32::DARK_BLUE;
+            vs.selection.bg_fill = egui::Color32::BLUE;
         }
     }
+    vs.widgets.hovered.bg_fill = vs.widgets.active.bg_fill.linear_multiply(0.5);
     context.set_visuals(vs);
 
 }
 
 fn main() -> eframe::Result {
-    // let factorial = | n | (1..=n).product::<i32>(); // Nice!
-    eframe::run_native (
+    let factorial = | n | (1..=n).product::<i32>(); // Nice!
+    println!("{}", factorial(5));
+    eframe::run_native(
         "Compounder", 
         eframe::NativeOptions {
             viewport: eframe::egui::ViewportBuilder::default()

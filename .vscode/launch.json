@@ -3,9 +3,9 @@
     "configurations": [
         {
             "name": "Launch",
-            "type":"cppvsdbg",
+            "type":"lldb",
             "request": "launch",
-            "program": "target/debug/Compounder.exe",
+            "program": "${workspaceFolder}/target/debug/compounder.exe",
             "args": [],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Build"

@@ -5,14 +5,23 @@
 			"label": "Build",
 			"type": "cargo",
 			"command": "build",
+            "problemMatcher": "$rustc",
             "presentation": {
-                "reveal":"silent",
-                "clear": true
+                "close": true
             },
 	  		"group": {
 				"kind": "build",
 				"isDefault": true,
-			},
+			}
+		},
+        {
+			"label": "Run",
+			"type": "cargo",
+			"command": "run",
+            "problemMatcher": "$rustc",
+            "presentation": {
+                "close": true
+            },
 		}
-	]
+	],
 }
