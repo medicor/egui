@@ -7,7 +7,7 @@
 			"command": "build",
             "problemMatcher": "$rustc",
             "presentation": {
-                "close": true
+                // "close": true
             },
 	  		"group": {
 				"kind": "build",
@@ -20,7 +20,7 @@
 			"command": "run",
             "problemMatcher": "$rustc",
             "presentation": {
-                "close": true
+                // "close": true
             },
 		}
 	],

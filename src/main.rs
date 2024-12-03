@@ -1,7 +1,7 @@
-
 #![windows_subsystem = "windows"]
 
 const GUI_SIZE: egui::Vec2 = egui::Vec2::new(400.0, 400.0);
+const ACCENT_COLOR: egui::Color32 = egui::Color32::from_rgb(170, 0, 204);
 
 use std::str::FromStr;
 use chrono::NaiveDate;
@@ -54,9 +54,9 @@ impl Compounder
         }
         self.ui_size = size;
         let zf = match size {
-            InterfaceSize::Small  => 1.0,
-            InterfaceSize::Medium => 1.2,
-            InterfaceSize::Large  => 1.5
+            InterfaceSize::Small  => 1.1,
+            InterfaceSize::Medium => 1.3,
+            InterfaceSize::Large  => 1.6
         };
         // context.set_zoom_factor(zf); // Strange things happen when zoom is set through method.
         context.options_mut(|writer| writer.zoom_factor = zf);
@@ -73,8 +73,8 @@ impl Compounder
 
     fn get_frame (&mut self) -> egui::Frame {
         let cb = match self.ui_mode {
-            InterfaceMode::Dark  => egui::Color32::from_rgb( 15,  10,  12),
-            InterfaceMode::Light => egui::Color32::from_rgb(255, 240, 245)
+            InterfaceMode::Dark  => egui::Color32::from_rgb( 20,  20,  20),
+            InterfaceMode::Light => egui::Color32::from_rgb(250, 250, 250)
         };
         egui::Frame {
             inner_margin: egui::Margin::same(24.0),
@@ -212,28 +212,21 @@ fn set_style (context: &egui::Context, mode: InterfaceMode) {
     let mut vs: egui::Visuals;
     match mode {
         InterfaceMode::Dark  => {
-            // RGB = 290, 100, 40
             context.set_theme(egui::Theme::Dark);
             vs = egui::Visuals::dark();
-            // vs.widgets.inactive.bg_fill = egui::Color32::LIGHT_RED;
-            vs.widgets.active.bg_fill = egui::Color32::RED;
-            // vs.widgets.inactive.weak_bg_fill = egui::Color32::LIGHT_RED;
-            // vs.widgets.active.weak_bg_fill = egui::Color32::RED;
-            vs.widgets.hovered.weak_bg_fill = egui::Color32::DARK_RED;
-            vs.selection.bg_fill = egui::Color32::RED;
+            vs.override_text_color = Option::Some(egui::Color32::from_gray(255));
         },
         InterfaceMode::Light => {
             context.set_theme(egui::Theme::Light);
             vs = egui::Visuals::light();
-            // vs.widgets.inactive.bg_fill = egui::Color32::LIGHT_BLUE;
-            vs.widgets.active.bg_fill = egui::Color32::BLUE;
-            // vs.widgets.inactive.weak_bg_fill = egui::Color32::LIGHT_BLUE;
-            // vs.widgets.active.weak_bg_fill = egui::Color32::BLUE;
-            vs.widgets.hovered.weak_bg_fill = egui::Color32::DARK_BLUE;
-            vs.selection.bg_fill = egui::Color32::BLUE;
+            vs.override_text_color = Option::Some(egui::Color32::from_gray(0));
         }
     }
-    vs.widgets.hovered.bg_fill = vs.widgets.active.bg_fill.linear_multiply(0.5);
+    vs.widgets.active.bg_fill = ACCENT_COLOR;
+    vs.widgets.noninteractive.bg_fill = ACCENT_COLOR;
+    vs.selection.bg_fill = ACCENT_COLOR.gamma_multiply(0.6);
+    vs.widgets.hovered.bg_fill = ACCENT_COLOR.gamma_multiply(0.2);
+    vs.widgets.hovered.weak_bg_fill = ACCENT_COLOR.gamma_multiply(0.1);
     context.set_visuals(vs);
 
 }

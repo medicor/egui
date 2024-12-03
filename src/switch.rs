@@ -14,7 +14,7 @@ pub fn switch (ui: &mut egui::Ui, state: &mut bool) -> egui::Response {
         let radius  = 0.5 * area.height();
         let visuals = &ui.visuals().widgets;
         let widgets = ui.style().interact(&response);
-        ui.painter().rect(area, radius, widgets.bg_fill, widgets.bg_stroke); // Paint "slider" beneath.
+        ui.painter().rect(area, radius, visuals.inactive.bg_fill, visuals.inactive.bg_stroke); // Paint "slider" beneath.
         let circle  = egui::lerp((area.left() + radius - 2.0)..=(area.right() - radius), easing);
         let center  = egui::pos2(circle, area.center().y);
         ui.painter().circle(center, 0.8 * radius, widgets.bg_fill, widgets.fg_stroke); // Paint "knob" above.
