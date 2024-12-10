@@ -1,9 +1,14 @@
-#![windows_subsystem = "windows"]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+// #![windows_subsystem = "windows"] // Causes stdout to disappear.
 
-const GUI_SIZE: egui::Vec2 = egui::Vec2::new(400.0, 400.0);
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+#![deny(clippy::panic)]
+#![deny(unused_must_use)]
+
+const GUI_SIZE: egui::Vec2 = egui::Vec2::new(400.0, 390.0);
 const ACCENT_COLOR: egui::Color32 = egui::Color32::from_rgb(170, 0, 204);
 
-use std::str::FromStr;
 use chrono::NaiveDate;
 use eframe::egui;
 use eframe:: { 
@@ -12,7 +17,10 @@ use eframe:: {
 };
 
 mod switch;
-use switch::toggle;
+mod datefield;
+
+use switch::Switch;
+use datefield::Datefield;
 
 #[derive(serde::Deserialize, serde::Serialize, PartialEq, Copy, Clone)]
 enum InterfaceSize 
@@ -32,8 +40,8 @@ enum InterfaceMode
 #[derive(serde::Deserialize, serde::Serialize)]
 struct Compounder 
 {
-    start_date: NaiveDate,
-    final_date: NaiveDate,
+    start_date: String,
+    final_date: String,
     ui_size: InterfaceSize,
     ui_mode: InterfaceMode
 }
@@ -54,9 +62,9 @@ impl Compounder
         }
         self.ui_size = size;
         let zf = match size {
-            InterfaceSize::Small  => 1.1,
+            InterfaceSize::Small  => 1.0,
             InterfaceSize::Medium => 1.3,
-            InterfaceSize::Large  => 1.6
+            InterfaceSize::Large  => 1.7
         };
         // context.set_zoom_factor(zf); // Strange things happen when zoom is set through method.
         context.options_mut(|writer| writer.zoom_factor = zf);
@@ -90,8 +98,8 @@ impl Default for Compounder
     fn default() -> Self {
         let dt = chrono::Local::now().date_naive();
         Self {
-            start_date: dt, //NaiveDate::from_ymd_opt(2024,  8, 31).unwrap(),
-            final_date: dt,
+            start_date: dt.to_string(),
+            final_date: dt.checked_add_months(chrono::Months::new(12)).unwrap_or_default().to_string(),
             ui_size: InterfaceSize::Small,
             ui_mode: InterfaceMode::Dark
         }
@@ -105,25 +113,30 @@ impl App for Compounder
     }
 
     fn update (&mut self, context: &egui::Context, _frame: &mut Frame) {
-        dbg!("update");
         egui::CentralPanel::default().frame(self.get_frame()).show(context, |ui| {
             // egui::Image::new (egui::include_image!("../assets/Panel-Background.svg")).paint_at(ui, ui.ctx().screen_rect());
-            // egui::widgets::global_theme_preference_buttons(ui);
             ui.style_mut().spacing.item_spacing = egui::Vec2::new(16.0, 8.0);
             ui.style_mut().spacing.text_edit_width = 75.0;
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    let mut ss: String = self.start_date.to_string();
                     ui.label(egui::RichText::new("START DATE").small().weak());
-                    if ui.text_edit_singleline(&mut ss).highlight().changed() {
-                        self.start_date = NaiveDate::from_str(&ss).unwrap();
-                        println!("{ss}")
-                    };
+                    ui.add(Datefield::new(&mut self.start_date));
+                    // // if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    // // }
+                    // if ui.text_edit_singleline(&mut self.editor).highlight().lost_focus() {
+                    //     if let Ok(date) = NaiveDate::parse_from_str(&self.editor, "%Y-%m-%d") {
+                    //         self.start_date = date;
+                    //         self.editor = String::from("");
+                    //         // println!("Assigning new date {date}");
+                    //     }
+                    // };
                     ui.add_space(12.0);
                     ui.label(egui::RichText::new("FINAL DATE").small().weak());
-                    if ui.text_edit_singleline(&mut ss).highlight().changed() {
-                        self.final_date = NaiveDate::from_str(&ss).unwrap();
-                        println!("{ss}")
+                    let mut ss = self.final_date.to_string();
+                    if ui.text_edit_singleline(&mut ss).highlight().lost_focus() {
+                        if let Ok(date) = NaiveDate::parse_from_str(&ss, "%Y-%m-%d") {
+                            self.final_date = date.to_string();
+                        }
                     };
                 });
                 ui.add_space(36.0);
@@ -173,8 +186,7 @@ impl App for Compounder
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     ui.label(egui::RichText::new("DARK MODE").small().weak());
-                    let mut im: bool = InterfaceMode::Dark == self.ui_mode;
-                    if ui.add(toggle(&mut im)).clicked() {
+                    if ui.add(Switch::new(InterfaceMode::Dark == self.ui_mode)).clicked() {
                         match self.ui_mode {
                             InterfaceMode::Dark  => self.remode(ui.ctx(), InterfaceMode::Light),
                             InterfaceMode::Light => self.remode(ui.ctx(), InterfaceMode::Dark)
@@ -202,10 +214,13 @@ impl App for Compounder
 }
 
 fn set_fonts (context: &egui::Context) {
-    let mut fd = egui::FontDefinitions::default();
-    fd.font_data.insert("Sans Font".to_owned(), egui::FontData::from_static(include_bytes!("../assets/Inter-Regular.ttf")));
-    fd.families.get_mut(&egui::FontFamily::Proportional).unwrap().insert(0, "Sans Font".to_owned());
-    context.set_fonts(fd);
+    let fontname = "Sans Font";
+    let mut font = egui::FontDefinitions::default();
+    font.font_data.insert(fontname.to_string(), egui::FontData::from_static(include_bytes!("../assets/Inter-Regular.ttf")));
+    if let Some(p) = font.families.get_mut(&egui::FontFamily::Proportional) {
+        p.insert(0, fontname.to_string());
+        context.set_fonts(font);
+    };
 }
 
 fn set_style (context: &egui::Context, mode: InterfaceMode) {
@@ -225,15 +240,16 @@ fn set_style (context: &egui::Context, mode: InterfaceMode) {
     vs.widgets.active.bg_fill = ACCENT_COLOR;
     vs.widgets.noninteractive.bg_fill = ACCENT_COLOR;
     vs.selection.bg_fill = ACCENT_COLOR.gamma_multiply(0.6);
-    vs.widgets.hovered.bg_fill = ACCENT_COLOR.gamma_multiply(0.2);
+    vs.widgets.hovered.bg_fill = ACCENT_COLOR;//.gamma_multiply(2.0).to_opaque();
     vs.widgets.hovered.weak_bg_fill = ACCENT_COLOR.gamma_multiply(0.1);
+    vs.slider_trailing_fill = true;
     context.set_visuals(vs);
 
 }
 
 fn main() -> eframe::Result {
-    let factorial = | n | (1..=n).product::<i32>(); // Nice!
-    println!("{}", factorial(5));
+    // let factorial = | n | (1..=n).product::<i32>(); // Nice!
+    // println!("{}", factorial(5));
     eframe::run_native(
         "Compounder", 
         eframe::NativeOptions {
@@ -249,3 +265,21 @@ fn main() -> eframe::Result {
         })
     )
 }
+
+/*
+function run() {
+    // Output
+    var daysInAYear = 365.25;
+    var oneDay = 24 * 60 * 60 * 1000; // hours*minutes*seconds*milliseconds
+    var totalYield = parseInputValue(document.getElementById('totalYield').value / 100);
+    var firstDate = new Date(document.getElementById('startDate').value);
+    var secondDate = new Date(document.getElementById('endDate').value);
+    var diffDays = Math.round(Math.abs((firstDate.getTime() - secondDate.getTime()) / (oneDay)));
+    var calcYears = diffDays / daysInAYear;
+    var diffYears = Math.floor(diffDays / daysInAYear);
+    var remainingMonth = Math.floor(((diffDays / daysInAYear) - diffYears) * 12);
+    var monthText = '';
+    var aCAGR = Math.pow(1 + (totalYield), 1 / calcYears) - 1;
+    var heltal = Math.floor(aCAGR * 100);
+    var decimal = -(heltal - (aCAGR * 100));
+}*/
