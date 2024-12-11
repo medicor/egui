@@ -8,6 +8,7 @@
 
 const GUI_SIZE: egui::Vec2 = egui::Vec2::new(400.0, 390.0);
 const ACCENT_COLOR: egui::Color32 = egui::Color32::from_rgb(170, 0, 204);
+const DATEFORMAT: &str = "%Y-%m-%d";
 
 use chrono::NaiveDate;
 use eframe::egui;
@@ -17,10 +18,10 @@ use eframe:: {
 };
 
 mod switch;
-mod datefield;
+mod errorfield;
 
 use switch::Switch;
-use datefield::Datefield;
+use errorfield::ErrorField;
 
 #[derive(serde::Deserialize, serde::Serialize, PartialEq, Copy, Clone)]
 enum InterfaceSize 
@@ -91,6 +92,20 @@ impl Compounder
         }
     }
 
+    fn valid_start (&self) -> bool {
+        NaiveDate::parse_from_str(&self.start_date, DATEFORMAT).is_ok()
+    }
+
+    fn valid_final (&self) -> bool {
+        NaiveDate::parse_from_str(&self.final_date, DATEFORMAT).is_ok()
+    }
+
+    fn valid_range (&self) -> bool {
+        let sd = NaiveDate::parse_from_str(&self.start_date, DATEFORMAT);
+        let fd = NaiveDate::parse_from_str(&self.final_date, DATEFORMAT);
+        sd.is_ok() && fd.is_ok() && sd.unwrap_or_default() <= fd.unwrap_or_default()
+    }
+
 }
 
 impl Default for Compounder 
@@ -113,31 +128,22 @@ impl App for Compounder
     }
 
     fn update (&mut self, context: &egui::Context, _frame: &mut Frame) {
+        let start_is_valid = self.valid_start();
+        let final_is_valid = self.valid_final();
+        let range_is_valid = self.valid_range();
         egui::CentralPanel::default().frame(self.get_frame()).show(context, |ui| {
+            let styles = ui.style_mut();
+            styles.spacing.item_spacing = egui::Vec2::new(16.0, 8.0);
+            styles.spacing.text_edit_width = 75.0;
             // egui::Image::new (egui::include_image!("../assets/Panel-Background.svg")).paint_at(ui, ui.ctx().screen_rect());
-            ui.style_mut().spacing.item_spacing = egui::Vec2::new(16.0, 8.0);
-            ui.style_mut().spacing.text_edit_width = 75.0;
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     ui.label(egui::RichText::new("START DATE").small().weak());
-                    ui.add(Datefield::new(&mut self.start_date));
-                    // // if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                    // // }
-                    // if ui.text_edit_singleline(&mut self.editor).highlight().lost_focus() {
-                    //     if let Ok(date) = NaiveDate::parse_from_str(&self.editor, "%Y-%m-%d") {
-                    //         self.start_date = date;
-                    //         self.editor = String::from("");
-                    //         // println!("Assigning new date {date}");
-                    //     }
-                    // };
+                    // let x = self.valid_start() && self.valid_range();
+                    ui.add(ErrorField::new(&mut self.start_date, start_is_valid && range_is_valid));
                     ui.add_space(12.0);
                     ui.label(egui::RichText::new("FINAL DATE").small().weak());
-                    let mut ss = self.final_date.to_string();
-                    if ui.text_edit_singleline(&mut ss).highlight().lost_focus() {
-                        if let Ok(date) = NaiveDate::parse_from_str(&ss, "%Y-%m-%d") {
-                            self.final_date = date.to_string();
-                        }
-                    };
+                    ui.add(ErrorField::new(&mut self.final_date, final_is_valid));
                 });
                 ui.add_space(36.0);
                 ui.vertical(|ui| {
@@ -240,7 +246,7 @@ fn set_style (context: &egui::Context, mode: InterfaceMode) {
     vs.widgets.active.bg_fill = ACCENT_COLOR;
     vs.widgets.noninteractive.bg_fill = ACCENT_COLOR;
     vs.selection.bg_fill = ACCENT_COLOR.gamma_multiply(0.6);
-    vs.widgets.hovered.bg_fill = ACCENT_COLOR;//.gamma_multiply(2.0).to_opaque();
+    vs.widgets.hovered.bg_fill = ACCENT_COLOR;
     vs.widgets.hovered.weak_bg_fill = ACCENT_COLOR.gamma_multiply(0.1);
     vs.slider_trailing_fill = true;
     context.set_visuals(vs);
