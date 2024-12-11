@@ -93,11 +93,11 @@ impl Compounder
     }
 
     fn valid_start (&self) -> bool {
-        NaiveDate::parse_from_str(&self.start_date, DATEFORMAT).is_ok()
+        NaiveDate::parse_from_str(&self.start_date, DATEFORMAT).is_ok() && self.start_date.len() == 10 
     }
 
     fn valid_final (&self) -> bool {
-        NaiveDate::parse_from_str(&self.final_date, DATEFORMAT).is_ok()
+        NaiveDate::parse_from_str(&self.final_date, DATEFORMAT).is_ok() && self.final_date.len() == 10
     }
 
     fn valid_range (&self) -> bool {
@@ -138,12 +138,13 @@ impl App for Compounder
             // egui::Image::new (egui::include_image!("../assets/Panel-Background.svg")).paint_at(ui, ui.ctx().screen_rect());
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
+                    // not start is valid
+                    // start is valid and range is not valid but final is valid 
                     ui.label(egui::RichText::new("START DATE").small().weak());
-                    // let x = self.valid_start() && self.valid_range();
-                    ui.add(ErrorField::new(&mut self.start_date, start_is_valid && range_is_valid));
+                    ui.add(ErrorField::new(&mut self.start_date, start_is_valid && (!final_is_valid || range_is_valid)));
                     ui.add_space(12.0);
                     ui.label(egui::RichText::new("FINAL DATE").small().weak());
-                    ui.add(ErrorField::new(&mut self.final_date, final_is_valid));
+                    ui.add(ErrorField::new(&mut self.final_date, final_is_valid && (!start_is_valid || range_is_valid)));
                 });
                 ui.add_space(36.0);
                 ui.vertical(|ui| {
