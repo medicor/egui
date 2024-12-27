@@ -148,12 +148,40 @@ impl Compounder
     }
 
     fn redo_cagr (&mut self) {
+        //TODO: refactor string to dates into own metod?
+        let sd = NaiveDate::parse_from_str(&self.start_date, DATEFORMAT);
+        let fd = NaiveDate::parse_from_str(&self.final_date, DATEFORMAT);
+        if  sd.is_err() || fd.is_err() {
+            return;
+        }
+        let sd = sd.unwrap_or_default();
+        let fd = fd.unwrap_or_default();
+        if fd < sd {
+            return;
+        }
+        let nd = (fd-sd).num_days();
+        if  nd == 0 {
+            return;
+        }
+        let sv = self.start_amount.trim().parse::<f64>();
+        let fv = self.final_amount.trim().parse::<f64>();
+        if sv.is_err() || fv.is_err() {
+            return;
+        }
+        let sv = sv.unwrap_or_default();
+        let fv = fv.unwrap_or_default();
+        let cc = ((fv/sv).powf(1.0 / (nd as f64 /365.25)) - 1.0) * 100.0;
+        let dp = match cc {
+            0.0..100.0 => 1,
+            _ => 0
+        };
+        self.cagr = format!("{:.dp$}", cc);
     }
 
     fn redo_parts (&mut self) {
         let sd = NaiveDate::parse_from_str(&self.start_date, DATEFORMAT);
         let fd = NaiveDate::parse_from_str(&self.final_date, DATEFORMAT);
-        if sd.is_err() || fd.is_err() {
+        if  sd.is_err() || fd.is_err() {
             return;
         }
         let sd = sd.unwrap_or_default();
@@ -170,26 +198,16 @@ impl Compounder
         self.redo_cagr();
     }
 
-    /*
-    function run() {
-        // Output
-        var daysInAYear = 365.25;
-        var oneDay = 24 * 60 * 60 * 1000; // hours*minutes*seconds*milliseconds
-        var totalYield = parseInputValue(document.getElementById('totalYield').value / 100);
-        var firstDate = new Date(document.getElementById('startDate').value);
-        var secondDate = new Date(document.getElementById('endDate').value);
-        var diffDays = Math.round(Math.abs((firstDate.getTime() - secondDate.getTime()) / (oneDay)));
-        var calcYears = diffDays / daysInAYear;
-        var diffYears = Math.floor(diffDays / daysInAYear);
-        var remainingMonth = Math.floor(((diffDays / daysInAYear) - diffYears) * 12);
-        var monthText = '';
-        var aCAGR = Math.pow(1 + (totalYield), 1 / calcYears) - 1;
-        var heltal = Math.floor(aCAGR * 100);
-        var decimal = -(heltal - (aCAGR * 100));
-    }
-    */
-
     fn redo_final (&mut self) {
+        let sd = NaiveDate::parse_from_str(&self.start_date, DATEFORMAT);
+        if  sd.is_err() {
+            return;
+        }
+        let fd = sd.ok()
+            .and_then(|r| r.checked_add_months(chrono::Months::new(12 * self.years as u32 + self.months as u32)))
+            .and_then(|r| r.checked_add_days(chrono::Days::new(7 * self.weeks as u64 + self.days as u64))
+        ).unwrap_or_default();
+        self.final_date = fd.format(DATEFORMAT).to_string();
         self.redo_cagr();
     }
 
@@ -206,9 +224,9 @@ impl Default for Compounder
             months: 0,
             weeks: 0,
             days: 0,
-            start_amount: String::from("0"),
-            final_amount: String::from("0"),
-            cagr: String::from("0"),
+            start_amount: String::from("1000"),
+            final_amount: String::from("1100"),
+            cagr: String::from("10"),
             ui_size: InterfaceSize::Small,
             ui_mode: InterfaceMode::Dark
         }
@@ -245,16 +263,16 @@ impl App for Compounder
                 ui.add_space(36.0);
                 ui.vertical(|ui| {
                     ui.add_space(12.0);
-                    if ui.add(egui::Slider::new(&mut self.years,  0..=50).text("years")).lost_focus() {
+                    if ui.add(egui::Slider::new(&mut self.years,  0..=50).text("years")).changed() {
                         self.redo_final();
                     };
-                    if ui.add(egui::Slider::new(&mut self.months, 0..=11).text("months")).lost_focus() {
+                    if ui.add(egui::Slider::new(&mut self.months, 0..=11).text("months")).changed() {
                         self.redo_final();
                     };
-                    if ui.add(egui::Slider::new(&mut self.weeks,  0..=4).text("weeks")).lost_focus() {
+                    if ui.add(egui::Slider::new(&mut self.weeks,  0..=4).text("weeks")).changed() {
                         self.redo_final();
                     };
-                    if ui.add(egui::Slider::new(&mut self.days,   0..=6).text("days")).lost_focus() {
+                    if ui.add(egui::Slider::new(&mut self.days,   0..=6).text("days")).changed() {
                         self.redo_final();
                     };
                 });
@@ -270,12 +288,16 @@ impl App for Compounder
                     ui.horizontal(|ui| {
                         ui.vertical(|ui| {
                             ui.label(egui::RichText::new("FINAL AMOUNT").small().weak());
-                            ui.text_edit_singleline(&mut self.final_amount).highlight();
+                            if ui.text_edit_singleline(&mut self.final_amount).highlight().lost_focus() {
+                                self.redo_cagr();
+                            };
                         });
                         ui.label(egui::RichText::new("\n  =  ").strong());
                         ui.vertical(|ui| {
                             ui.label(egui::RichText::new("CAGR").small().weak());
-                            ui.text_edit_singleline(&mut self.cagr).highlight();
+                            if ui.text_edit_singleline(&mut self.cagr).highlight().lost_focus() {
+                                self.redo_cagr();
+                            };
                         });
                     });
                 });
