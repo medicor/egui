@@ -147,37 +147,6 @@ impl Compounder
         sd.is_ok() && fd.is_ok() && sd.unwrap_or_default() <= fd.unwrap_or_default()
     }
 
-    fn redo_cagr (&mut self) {
-        //TODO: refactor string to dates into own metod?
-        let sd = NaiveDate::parse_from_str(&self.start_date, DATEFORMAT);
-        let fd = NaiveDate::parse_from_str(&self.final_date, DATEFORMAT);
-        if  sd.is_err() || fd.is_err() {
-            return;
-        }
-        let sd = sd.unwrap_or_default();
-        let fd = fd.unwrap_or_default();
-        if fd < sd {
-            return;
-        }
-        let nd = (fd-sd).num_days();
-        if  nd == 0 {
-            return;
-        }
-        let sv = self.start_amount.trim().parse::<f64>();
-        let fv = self.final_amount.trim().parse::<f64>();
-        if sv.is_err() || fv.is_err() {
-            return;
-        }
-        let sv = sv.unwrap_or_default();
-        let fv = fv.unwrap_or_default();
-        let cc = ((fv/sv).powf(1.0 / (nd as f64 /365.25)) - 1.0) * 100.0;
-        let dp = match cc {
-            0.0..100.0 => 1,
-            _ => 0
-        };
-        self.cagr = format!("{:.dp$}", cc);
-    }
-
     fn redo_parts (&mut self) {
         let sd = NaiveDate::parse_from_str(&self.start_date, DATEFORMAT);
         let fd = NaiveDate::parse_from_str(&self.final_date, DATEFORMAT);
@@ -209,6 +178,63 @@ impl Compounder
         ).unwrap_or_default();
         self.final_date = fd.format(DATEFORMAT).to_string();
         self.redo_cagr();
+    }
+
+    fn redo_cagr (&mut self) {
+        //TODO: refactor string to dates into own metod?
+        let sd = NaiveDate::parse_from_str(&self.start_date, DATEFORMAT);
+        let fd = NaiveDate::parse_from_str(&self.final_date, DATEFORMAT);
+        if  sd.is_err() || fd.is_err() {
+            return;
+        }
+        let sd = sd.unwrap_or_default();
+        let fd = fd.unwrap_or_default();
+        if fd < sd {
+            return;
+        }
+        let nd = (fd-sd).num_days();
+        if  nd == 0 {
+            return;
+        }
+        let sv = self.start_amount.trim().parse::<f64>();
+        let fv = self.final_amount.trim().parse::<f64>();
+        if sv.is_err() || fv.is_err() {
+            return;
+        }
+        let sv = sv.unwrap_or_default();
+        let fv = fv.unwrap_or_default();
+        let cc = ((fv/sv).powf(1.0 / (nd as f64 /365.25)) - 1.0) * 100.0;
+        let dp = match cc {
+            0.0..100.0 => 1,
+            _ => 0
+        };
+        self.cagr = format!("{:.dp$}", cc);
+    }
+
+    fn redo_amount (&mut self) {
+        let sd = NaiveDate::parse_from_str(&self.start_date, DATEFORMAT);
+        let fd = NaiveDate::parse_from_str(&self.final_date, DATEFORMAT);
+        if  sd.is_err() || fd.is_err() {
+            return;
+        }
+        let sd = sd.unwrap_or_default();
+        let fd = fd.unwrap_or_default();
+        if fd < sd {
+            return;
+        }
+        let nd = (fd-sd).num_days();
+        if  nd == 0 {
+            return;
+        }
+        let sv = self.start_amount.trim().parse::<f64>();
+        let cc = self.cagr.trim().parse::<f64>();
+        if sv.is_err() || cc.is_err() {
+            return;
+        }
+        let sv = sv.unwrap_or_default();
+        let cc = cc.unwrap_or_default() / 100.0;
+        let fv = sv * (1.0 + cc).powf(nd as f64 /365.25);
+        self.final_amount = fv.round().to_string();
     }
 
 }
@@ -283,7 +309,9 @@ impl App for Compounder
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     ui.label(egui::RichText::new("START AMOUNT").small().weak());
-                    ui.text_edit_singleline(&mut self.start_amount).highlight();
+                    if ui.text_edit_singleline(&mut self.start_amount).highlight().lost_focus() {
+                        self.redo_cagr();
+                    }
                     ui.add_space(12.0);
                     ui.horizontal(|ui| {
                         ui.vertical(|ui| {
@@ -296,7 +324,7 @@ impl App for Compounder
                         ui.vertical(|ui| {
                             ui.label(egui::RichText::new("CAGR").small().weak());
                             if ui.text_edit_singleline(&mut self.cagr).highlight().lost_focus() {
-                                self.redo_cagr();
+                                self.redo_amount();
                             };
                         });
                     });
