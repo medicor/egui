@@ -1,4 +1,10 @@
 
+#![deny(clippy::pedantic)]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+#![deny(clippy::panic)]
+#![deny(unused_must_use)]
+
 use eframe::egui;
 use eframe::egui::Widget;
 
@@ -10,7 +16,7 @@ pub struct Switch
 
 impl Switch
 {
-    pub fn new (state: bool) -> Self {
+    pub const fn new (state: bool) -> Self {
         Self {
             state
         }

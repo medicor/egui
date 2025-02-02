@@ -1,4 +1,10 @@
 
+#![deny(clippy::pedantic)]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+#![deny(clippy::panic)]
+#![deny(unused_must_use)]
+
 use eframe::egui;
 use eframe::egui::Widget;
 
@@ -10,7 +16,7 @@ pub struct ErrorField<'a>
 
 impl<'a> ErrorField<'a>
 {
-    pub fn new (value: &'a mut String, valid: bool) -> Self {
+    pub const fn new (value: &'a mut String, valid: bool) -> Self {
         Self {
             value,
             valid

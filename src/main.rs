@@ -1,10 +1,16 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 // #![windows_subsystem = "windows"] // Causes stdout to disappear.
 
+#![deny(clippy::pedantic)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 #![deny(clippy::panic)]
 #![deny(unused_must_use)]
+
+// #![deny(clippy::unwrap_used)]
+// #![deny(clippy::expect_used)]
+// #![deny(clippy::panic)]
+// #![deny(unused_must_use)]
 
 const GUI_SIZE: egui::Vec2 = egui::Vec2::new(400.0, 390.0);
 const ACCENT_COLOR: egui::Color32 = egui::Color32::from_rgb(170, 0, 204);
@@ -57,7 +63,7 @@ struct Compounder
 impl Compounder 
 {
     fn new (context: &eframe::CreationContext<'_>) -> Self {
-        let cc: Compounder = if let Some(ps) = context.storage { eframe::get_value(ps, eframe::APP_KEY).unwrap_or_default() } else { Default::default() };
+        let cc: Compounder = if let Some(ps) = context.storage { eframe::get_value(ps, eframe::APP_KEY).unwrap_or_default() } else { Compounder::default() };
         // egui_extras::install_image_loaders(&cc.egui_ctx);
         Self::set_fonts(&context.egui_ctx);
         Self::set_style(&context.egui_ctx, cc.ui_mode);
@@ -173,8 +179,8 @@ impl Compounder
             return;
         }
         let fd = sd.ok()
-            .and_then(|r| r.checked_add_months(chrono::Months::new(12 * self.years as u32 + self.months as u32)))
-            .and_then(|r| r.checked_add_days(chrono::Days::new(7 * self.weeks as u64 + self.days as u64))
+            .and_then(|r| r.checked_add_months(chrono::Months::new(12 * u32::from(self.years) + u32::from(self.months)))
+            .and_then(|r| r.checked_add_days(chrono::Days::new(7 * u64::from(self.weeks) + u64::from(self.days))))
         ).unwrap_or_default();
         self.final_date = fd.format(DATEFORMAT).to_string();
         self.redo_cagr();
@@ -203,12 +209,12 @@ impl Compounder
         }
         let sv = sv.unwrap_or_default();
         let fv = fv.unwrap_or_default();
-        let cc = ((fv/sv).powf(1.0 / (nd as f64 /365.25)) - 1.0) * 100.0;
+        let cc = ((fv/sv).powf(1.0 / (f64::from(i32::try_from(nd).unwrap_or(0)) / 365.25)) - 1.0) * 100.0;
         let dp = match cc {
             0.0..100.0 => 1,
             _ => 0
         };
-        self.cagr = format!("{:.dp$}", cc);
+        self.cagr = format!("{cc:.dp$}");
     }
 
     fn redo_amount (&mut self) {
@@ -233,7 +239,7 @@ impl Compounder
         }
         let sv = sv.unwrap_or_default();
         let cc = cc.unwrap_or_default() / 100.0;
-        let fv = sv * (1.0 + cc).powf(nd as f64 /365.25);
+        let fv = sv * (1.0 + cc).powf(f64::from(i32::try_from(nd).unwrap_or(0)) / 365.25);
         self.final_amount = fv.round().to_string();
     }
 
@@ -367,14 +373,14 @@ fn date_difference(sd: NaiveDate, fd: NaiveDate) -> (u8, u8, u8, u8) {
     // Solution suggested by ChatGPT (added number of weeks and adjusted remaining days accordingly).
     use chrono::Datelike;
     let mut yn = fd.year() - sd.year();
-    let mut mn = fd.month() as i32 - sd.month() as i32;
-    let mut dn = fd.day() as i32 - sd.day() as i32;
+    let mut mn = i32::try_from(fd.month()).unwrap_or(0) - i32::try_from(sd.month()).unwrap_or(0);
+    let mut dn = i32::try_from(fd.day()).unwrap_or(0) - i32::try_from(sd.day()).unwrap_or(0);
 
     if dn < 0 {
         mn -= 1;
         let mp = if fd.month() == 1 { 12 } else { fd.month() - 1 };
         let pn = days_in_month(fd.year(), mp);
-        dn += pn as i32;
+        dn += i32::try_from(pn).unwrap_or(0);
         if  dn < 0 { // Rare cases like january 31st to march 1st on leap years.
             dn = 1;
         }
@@ -384,10 +390,10 @@ fn date_difference(sd: NaiveDate, fd: NaiveDate) -> (u8, u8, u8, u8) {
         mn += 12;
     }
     (
-        yn as u8, 
-        mn as u8, 
-        (dn / 7) as u8, 
-        (dn % 7) as u8
+        u8::try_from(yn).unwrap_or(0), 
+        u8::try_from(mn).unwrap_or(0), 
+        u8::try_from(dn / 7).unwrap_or(0), 
+        u8::try_from(dn % 7).unwrap_or(0)
     )
 }
 
